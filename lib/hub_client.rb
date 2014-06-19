@@ -15,6 +15,8 @@ module HubClient
     end
   end
 
+  private
+
   def handle_response(result, request)
     # When request didn't succeed we log it
     unless result.code.start_with?("2")
