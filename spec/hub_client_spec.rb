@@ -2,22 +2,18 @@ require 'spec_helper'
 require 'hub_client'
 
 describe HubClient do
-  class DummyClass
-    extend HubClient
-  end
-
   describe "#publish" do
     context "not configured" do
       after(:each) { HubClient.reset_configuration }
 
       it "raises an error when endpoint_url is not configured" do
         HubClient.configure { |config| config.env = "il-qa2" }
-        expect { DummyClass.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
+        expect { HubClient.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
       end
 
       it "raises an error when env is not configured" do
         HubClient.configure { |config| config.endpoint_url = "service-hub.com" }
-        expect { DummyClass.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
+        expect { HubClient.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
       end
     end
 
@@ -31,18 +27,18 @@ describe HubClient do
 
       it "publishes a message to hub" do
         stub_request(:post, HubClient.configuration.endpoint_url).
-            with(body: { env: "il-qa2", type: "order_created"}).to_return(status: 204)
+            with(body: { env: "il-qa2", type: "order_created" }).to_return(status: 204)
 
-        DummyClass.publish("order_created", {})
+        HubClient.publish("order_created", {})
         assert_requested :post, HubClient.configuration.endpoint_url
       end
 
       it "logs the request when hub didn't return success code" do
         stub_request(:post, HubClient.configuration.endpoint_url).
-            with(body: { env: "il-qa2", type: "order_created"}).to_return(status: 500)
+            with(body: { env: "il-qa2", type: "order_created" }).to_return(status: 500)
 
         expect(HubClient.logger).to receive(:info)
-        DummyClass.publish("order_created", {})
+        HubClient.publish("order_created", {})
         assert_requested :post, HubClient.configuration.endpoint_url
       end
 
