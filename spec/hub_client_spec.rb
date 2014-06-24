@@ -27,18 +27,20 @@ describe HubClient do
 
       it "publishes a message to hub" do
         stub_request(:post, HubClient.configuration.endpoint_url).
-            with(body: { env: "il-qa2", type: "order_created" }).to_return(status: 204)
+            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" } }).
+            to_return(status: 204)
 
-        HubClient.publish("order_created", {})
+        HubClient.publish(:order_created, { some: "content" })
         assert_requested :post, HubClient.configuration.endpoint_url
       end
 
       it "logs the request when hub didn't return success code" do
         stub_request(:post, HubClient.configuration.endpoint_url).
-            with(body: { env: "il-qa2", type: "order_created" }).to_return(status: 500)
+            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" } }).
+            to_return(status: 500)
 
         expect(HubClient.logger).to receive(:info)
-        HubClient.publish("order_created", {})
+        HubClient.publish(:order_created, { some: "content" })
         assert_requested :post, HubClient.configuration.endpoint_url
       end
 
