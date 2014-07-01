@@ -1,6 +1,6 @@
 module HubClient
   class Configuration
-    attr_accessor :env, :access_token, :endpoint_url
+    attr_accessor :env, :access_token, :endpoint_url, :http_auth
   end
 
   def self.configuration
