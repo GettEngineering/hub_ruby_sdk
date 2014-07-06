@@ -8,13 +8,9 @@ module HubClient
     raise ConfigArgumentMissing, "endpoint_url missing" unless HubClient.configuration.endpoint_url
     raise ConfigArgumentMissing, "env missing" unless HubClient.configuration.env
 
-    if HubClient.configuration.http_auth.present?
-      opts = HubClient.configuration.http_auth.slice(:user, :password)
-    end
+    payload = { type: type, env: HubClient.configuration.env, content: content.to_json }
 
-    rest_resource = RestClient::Resource.new(HubClient.configuration.endpoint_url, opts)
-    payload = { type: type, env: HubClient.configuration.env, content: content }
-    rest_resource.post(payload) do |response, request, result|
+    RestClient.post(HubClient.configuration.endpoint_url, payload, content_type: :json) do |response, request, result|
       handle_response(response, request, result)
     end
   end
