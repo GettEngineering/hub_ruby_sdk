@@ -23,13 +23,13 @@ First let's create initializer file and configure the client:
 HubClient.configure do |config|
   config.env = "IL" # Optional
   config.endpoint_url = "http://user:pass@hub.com" # scheme://host:port
-  config.access_token = "token"
+  config.access_token = "token" # Optional 
 end
 ```
 
 To publish any message to the hub:
 ```ruby
-HubClient.publish('message', { pay: "load"})
+HubClient.publish('message', { pay: "load" })
 ```
 
 ## Contributing
