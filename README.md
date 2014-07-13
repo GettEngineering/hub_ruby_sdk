@@ -32,6 +32,9 @@ To publish any message to the hub:
 HubClient.publish('message', { pay: "load" })
 ```
 
+### Hub API version remark
+You can set the service hub api version by change the HUB_VERSION const
+
 ## Contributing
 
 1. Fork it ( http://github.com/<my-github-username>/hub_client/fork )
