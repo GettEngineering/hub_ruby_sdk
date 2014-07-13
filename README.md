@@ -1,6 +1,6 @@
 # HubClient
 
-TODO: Write a gem description
+Service hub client
 
 ## Installation
 
@@ -18,7 +18,19 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+First let's create initializer file and configure the client:
+```ruby
+HubClient.configure do |config|
+  config.env = "IL" # Optional
+  config.endpoint_url = "http://user:pass@hub.com" # scheme://host:port
+  config.access_token = "token"
+end
+```
+
+To publish any message to the hub:
+```ruby
+HubClient.publish('message', { pay: "load"})
+```
 
 ## Contributing
 
