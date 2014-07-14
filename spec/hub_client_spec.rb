@@ -10,11 +10,6 @@ describe HubClient do
         HubClient.configure { |config| config.env = "il-qa2" }
         expect { HubClient.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
       end
-
-      it "raises an error when env is not configured" do
-        HubClient.configure { |config| config.endpoint_url = "service-hub.com" }
-        expect { HubClient.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
-      end
     end
 
     context "configured" do
