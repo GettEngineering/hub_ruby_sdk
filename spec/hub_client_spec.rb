@@ -39,6 +39,15 @@ describe HubClient do
         assert_requested :post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)
       end
 
+      it "overrides the env when supplied" do
+        stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)).
+            with(body: { env: "batman-env", type: "order_created", content: { some: "content" }.to_json }).
+            to_return(status: 204)
+
+        HubClient.publish(:order_created, { some: "content" }, "batman-env")
+        assert_requested :post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)
+      end
+
       after(:all) { HubClient.reset_configuration }
     end
   end
