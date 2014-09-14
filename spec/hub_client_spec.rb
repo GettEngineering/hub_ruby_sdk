@@ -22,7 +22,7 @@ describe HubClient do
 
       it "publishes a message to hub" do
         stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)).
-            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" }.to_json }).
+            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" } }).
             to_return(status: 204)
 
         HubClient.publish(:order_created, { some: "content" })
@@ -31,7 +31,7 @@ describe HubClient do
 
       it "logs the request when hub didn't return success code" do
         stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)).
-            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" }.to_json }).
+            with(body: { env: "il-qa2", type: "order_created", content: { some: "content" } }).
             to_return(status: 500)
 
         expect(HubClient.logger).to receive(:info)
@@ -41,11 +41,29 @@ describe HubClient do
 
       it "overrides the env when supplied" do
         stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)).
-            with(body: { env: "batman-env", type: "order_created", content: { some: "content" }.to_json }).
+            with(body: { env: "batman-env", type: "order_created", content: { some: "content" } }).
             to_return(status: 204)
 
         HubClient.publish(:order_created, { some: "content" }, "batman-env")
         assert_requested :post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)
+      end
+
+      it 'uses metadata if provided' do
+        url = HubClient.build_hub_url(HubClient.configuration.endpoint_url)
+        stub_request(:post, url)
+          .with(body: {
+            type: 'order_created',
+            env: 'test-env',
+            execute_after_sec: 60,
+            content: {some: 'content'}
+          }.to_json)
+          .to_return(status: 204)
+        HubClient.publish({
+          type: 'order_created',
+          env: 'test-env',
+          execute_after_sec: 60
+        }, {some: "content"})
+        assert_requested :post, url
       end
 
       after(:all) { HubClient.reset_configuration }

@@ -4,16 +4,16 @@ require "hub_client/version"
 require "rest-client"
 
 module HubClient
-  def self.publish(type, content, env = nil)
+  def self.publish(metadata, content, env = nil)
     raise ConfigArgumentMissing, "endpoint_url missing" unless HubClient.configuration.endpoint_url
 
-    payload = { type: type, content: content.to_json }
-    payload[:env] = HubClient.configuration.env if HubClient.configuration.env
-    payload[:env] = env if env
+    payload = (metadata.is_a?(String) || metadata.is_a?(Symbol)) ? { type: metadata.to_s } : metadata
+    payload[:content] = content
+    payload[:env] ||= env || payload[:env] || payload['env'] || HubClient.configuration.env
 
     hub_url = build_hub_url(HubClient.configuration.endpoint_url)
 
-    RestClient.post(hub_url, payload, content_type: :json) do |response, request, result|
+    RestClient.post(hub_url, payload.to_json, content_type: :json, accept: :json) do |response, request, result|
       handle_response(response, request, result)
     end
   end
