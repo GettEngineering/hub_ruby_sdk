@@ -1,3 +1,4 @@
+require "hub_client/exponential_backoff_interval"
 require "hub_client/configuration"
 require "hub_client/logger"
 require "hub_client/version"
@@ -13,8 +14,19 @@ module HubClient
 
     hub_url = build_hub_url(HubClient.configuration.endpoint_url)
 
-    RestClient.post(hub_url, payload.to_json, content_type: :json, accept: :json) do |response, request, result|
-      handle_response(response, request, result)
+    retry_intervals = HubClient.configuration.retry_intervals
+
+    retries = 0
+    begin
+      RestClient.post(hub_url, payload.to_json, content_type: :json, accept: :json)
+    rescue RestClient::Exception => e
+      HubClient.logger.warn("HubClient Exception #{e.class}: #{e.message} Code: #{e.http_code} Response: #{e.response} Request: #{payload}")
+
+      retries += 1
+      sleep_interval = retry_intervals && retry_intervals.next(retries)
+      raise unless sleep_interval
+      Kernel.sleep(sleep_interval)
+      retry
     end
   end
 
@@ -23,13 +35,6 @@ module HubClient
   def self.build_hub_url(endpoint_url)
     endpoint_url = endpoint_url.gsub(/\/$/, '') # remove last '/' if exists
     "#{endpoint_url}/api/#{HUB_VERSION}/messages"
-  end
-
-  def self.handle_response(response, request, result)
-    # When request didn't succeed we log it
-    unless result.code.start_with?("2")
-      HubClient.logger.info("HubClient Code: #{result.code} Response: #{response} Request: #{request.args}")
-    end
   end
 
   class ConfigArgumentMissing < StandardError; end

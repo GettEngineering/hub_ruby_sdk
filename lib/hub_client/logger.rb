@@ -9,5 +9,6 @@ module HubClient
 
   def self.logger
     @logger ||= Logger.new
+    @logger
   end
 end
