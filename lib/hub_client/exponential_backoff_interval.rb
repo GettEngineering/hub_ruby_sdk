@@ -4,7 +4,7 @@ module HubClient
 
     DEFAULT_OPTS = {
         initial: 0.5,
-        multiplier: 1.2,
+        multiplier: 1.5,
         rand_factor: 0.05,
         max_count: 10,
     }

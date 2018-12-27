@@ -5,20 +5,24 @@ require "hub_client/version"
 require "rest-client"
 
 module HubClient
+  REQUEST_HEADERS = {
+      content_type: :json,
+      accept: :json,
+  }
+
   def self.publish(metadata, content, env = nil)
-    raise ConfigArgumentMissing, "endpoint_url missing" unless HubClient.configuration.endpoint_url
+    config = HubClient.configuration
+    raise ConfigArgumentMissing, "endpoint_url missing" unless config.endpoint_url
 
     payload = (metadata.is_a?(String) || metadata.is_a?(Symbol)) ? { type: metadata.to_s } : metadata
     payload[:content] = content
-    payload[:env] ||= env || payload[:env] || payload['env'] || HubClient.configuration.env
+    payload[:env] ||= env || payload[:env] || payload['env'] || config.env
 
-    hub_url = build_hub_url(HubClient.configuration.endpoint_url)
-
-    retry_intervals = HubClient.configuration.retry_intervals
+    retry_intervals = config.retry_intervals
 
     retries = 0
     begin
-      RestClient.post(hub_url, payload.to_json, content_type: :json, accept: :json)
+      RestClient::Request.execute(request_opts(config, payload))
     rescue RestClient::Exception => e
       HubClient.logger.warn("HubClient Exception #{e.class}: #{e.message} Code: #{e.http_code} Response: #{e.response} Request: #{payload}")
 
@@ -31,6 +35,17 @@ module HubClient
   end
 
   private
+
+  def self.request_opts(config, payload)
+    {
+        method: :post,
+        url: build_hub_url(config.endpoint_url),
+        payload: payload.to_json,
+        headers: REQUEST_HEADERS,
+        timeout: config.timeout,
+        open_timeout: config.open_timeout,
+    }.reject {|_k,v| v.nil?}
+  end
 
   def self.build_hub_url(endpoint_url)
     endpoint_url = endpoint_url.gsub(/\/$/, '') # remove last '/' if exists

@@ -8,7 +8,7 @@ describe HubClient do
 
   describe "#publish" do
     context "not configured" do
-      after(:each) { HubClient.reset_configuration }
+      before {HubClient.reset_configuration}
 
       it "raises an error when endpoint_url is not configured" do
         HubClient.configure { |config| config.env = "il-qa2" }
@@ -61,6 +61,43 @@ describe HubClient do
       end
 
       after(:all) { HubClient.reset_configuration }
+
+      describe 'configured timeout' do
+        before do
+          allow(RestClient::Request).to receive(:new).and_call_original
+          stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url))
+        end
+
+        context 'when specified' do
+          before do
+            HubClient.configure do |config|
+              config.timeout = 31
+              config.open_timeout = 33
+            end
+            HubClient.publish(:order_created, { some: "content" })
+          end
+
+          it 'is passed to RestClient' do
+            expect(RestClient::Request).to have_received(:new).with(hash_including(timeout: 31, open_timeout: 33))
+          end
+        end
+
+        context 'when not specified' do
+          HubClient.reset_configuration
+          HubClient.configure do |config|
+            config.env = "il-qa2"
+            config.endpoint_url = "http://service-hub.com"
+          end
+
+          before do
+            HubClient.publish(:order_created, { some: "content" })
+          end
+
+          it 'is not passed to RestClient' do
+            expect(RestClient::Request).to have_received(:new).with(hash_not_including(:timeout, :open_timeout))
+          end
+        end
+      end
 
       describe 'exception handling' do
         def action
