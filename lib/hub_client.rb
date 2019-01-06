@@ -10,7 +10,7 @@ module HubClient
       accept: :json,
   }
 
-  def self.publish(metadata, content, env = nil)
+  def self.publish(metadata, content, env = nil, opts = {})
     config = HubClient.configuration
     raise ConfigArgumentMissing, "endpoint_url missing" unless config.endpoint_url
 
@@ -22,7 +22,7 @@ module HubClient
 
     retries = 0
     begin
-      RestClient::Request.execute(request_opts(config, payload))
+      RestClient::Request.execute(request_opts(config, payload, opts))
     rescue RestClient::Exception => e
       HubClient.logger.warn("HubClient Exception #{e.class}: #{e.message} Code: #{e.http_code} Response: #{e.response} Request: #{payload}")
 
@@ -36,16 +36,17 @@ module HubClient
 
   private
 
-  def self.encode_content_if_specified(config, payload)
-    (payload[:content] = payload[:content].to_json) if config.double_encode_content && payload[:content]
+  def self.encode_content_if_specified(config, payload, opts)
+    double_encode_content = opts.fetch(:double_encode_content, config.double_encode_content)
+    (payload[:content] = payload[:content].to_json) if double_encode_content && payload[:content]
     payload
   end
 
-  def self.request_opts(config, payload)
+  def self.request_opts(config, payload, opts)
     {
         method: :post,
         url: build_hub_url(config.endpoint_url),
-        payload: encode_content_if_specified(config, payload).to_json,
+        payload: encode_content_if_specified(config, payload, opts).to_json,
         headers: REQUEST_HEADERS,
         timeout: config.timeout,
         open_timeout: config.open_timeout,

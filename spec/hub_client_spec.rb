@@ -249,7 +249,7 @@ describe HubClient do
       end
 
       describe 'double_encode_payload option' do
-        shared_examples_for 'builds request correctly' do |description, content, expected_content|
+        shared_examples_for 'builds request correctly' do |description, opts, content, expected_content|
           it description do
             expected_body = { env: "il-qa2", type: "order_created" }
             (expected_body[:content] = expected_content) unless expected_content.nil?
@@ -257,12 +257,12 @@ describe HubClient do
                 with(body: expected_body).
                 to_return(status: 204)
 
-            HubClient.publish(:order_created, content)
+            HubClient.publish(:order_created, content, nil, opts)
             assert_requested :post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)
           end
         end
 
-        context 'when not specified' do
+        context 'when not specified in config' do
           before do
             HubClient.configure do |config|
               config.env = "il-qa2"
@@ -270,7 +270,20 @@ describe HubClient do
             end
           end
 
-          include_examples 'builds request correctly', 'does not double encode', {some: 'content'}, {some: 'content'}
+          context 'when not specified in opts' do
+            include_examples 'builds request correctly',
+                'does not double encode', {}, {some: 'content'}, {some: 'content'}
+          end
+
+          context 'when specified in opts as true' do
+            include_examples 'builds request correctly',
+                'double encodes', {double_encode_content: true}, {some: 'content'}, {some: 'content'}.to_json
+          end
+
+          context 'when specified in opts as false' do
+            include_examples 'builds request correctly',
+                'does not double encode', {double_encode_content: false}, {some: 'content'}, {some: 'content'}
+          end
         end
 
         context 'when specified as false' do
@@ -282,7 +295,20 @@ describe HubClient do
             end
           end
 
-          include_examples 'builds request correctly', 'does not double encode', {some: 'content'}, {some: 'content'}
+          context 'when not specified in opts' do
+            include_examples 'builds request correctly',
+                'does not double encode', {double_encode_content: false}, {some: 'content'}, {some: 'content'}
+          end
+
+          context 'when specified in opts as true' do
+            include_examples 'builds request correctly',
+                'double encodes', {double_encode_content: true}, {some: 'content'}, {some: 'content'}.to_json
+          end
+
+          context 'when specified in opts as false' do
+            include_examples 'builds request correctly',
+                'does not double encode', {double_encode_content: false}, {some: 'content'}, {some: 'content'}
+          end
         end
 
         context 'when specified as true' do
@@ -294,7 +320,20 @@ describe HubClient do
             end
           end
 
-          include_examples 'builds request correctly', 'double encodes', {some: 'content'}, {some: 'content'}.to_json
+          context 'when not specified in opts' do
+            include_examples 'builds request correctly',
+                'double encodes', {double_encode_content: true}, {some: 'content'}, {some: 'content'}.to_json
+          end
+
+          context 'when specified in opts as true' do
+            include_examples 'builds request correctly',
+                'double encodes', {double_encode_content: true}, {some: 'content'}, {some: 'content'}.to_json
+          end
+
+          context 'when specified in opts as false' do
+            include_examples 'builds request correctly',
+                'does not double encode', {double_encode_content: false}, {some: 'content'}, {some: 'content'}
+          end
         end
       end
     end
