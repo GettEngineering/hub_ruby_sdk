@@ -3,13 +3,11 @@ require 'hub_client'
 
 describe HubClient do
   before do
-    HubClient.configure {|config| config.retry_intervals = nil}
+    HubClient.reset_configuration
   end
 
   describe "#publish" do
     context "not configured" do
-      before {HubClient.reset_configuration}
-
       it "raises an error when endpoint_url is not configured" do
         HubClient.configure { |config| config.env = "il-qa2" }
         expect { HubClient.publish("order_created", {}) }.to raise_error(HubClient::ConfigArgumentMissing)
@@ -17,7 +15,7 @@ describe HubClient do
     end
 
     context "configured" do
-      before(:all) do
+      before do
         HubClient.configure do |config|
           config.env = "il-qa2"
           config.endpoint_url = "http://service-hub.com"
@@ -60,8 +58,6 @@ describe HubClient do
         assert_requested :post, url
       end
 
-      after(:all) { HubClient.reset_configuration }
-
       describe 'configured timeout' do
         before do
           allow(RestClient::Request).to receive(:new).and_call_original
@@ -83,7 +79,6 @@ describe HubClient do
         end
 
         context 'when not specified' do
-          HubClient.reset_configuration
           HubClient.configure do |config|
             config.env = "il-qa2"
             config.endpoint_url = "http://service-hub.com"
@@ -123,12 +118,19 @@ describe HubClient do
         end
 
         context 'when no retry_intervals is configured (default)' do
+          before do
+            HubClient.configure do |config|
+              config.env = "il-qa2"
+              config.endpoint_url = "http://service-hub.com"
+            end
+          end
+
           context 'when a timeout error occurs' do
             before do
               stub_publish_request.to_timeout
             end
 
-            it_behaves_like 'raises the exception', RestClient::RequestTimeout
+            it_behaves_like 'raises the exception', RestClient::Exceptions::OpenTimeout
           end
 
           context 'when a HTTP errors occurs' do
@@ -159,7 +161,7 @@ describe HubClient do
                 allow(@my_retry_interval).to receive(:next).with(1).and_return(nil)
               end
 
-              it_behaves_like 'raises the exception', RestClient::RequestTimeout
+              it_behaves_like 'raises the exception', RestClient::Exceptions::OpenTimeout
 
               it 'does not sleep' do
                 expect(Kernel).not_to receive(:sleep)
@@ -198,7 +200,7 @@ describe HubClient do
                     expect(@my_retry_interval).to receive(:next).with(2).and_return(nil)
                   end
 
-                  it_behaves_like 'raises the exception', RestClient::RequestTimeout
+                  it_behaves_like 'raises the exception', RestClient::Exceptions::OpenTimeout
                 end
 
                 context 'and the the retry_interval.next call returns a number' do
@@ -243,6 +245,56 @@ describe HubClient do
               end
             end
           end
+        end
+      end
+
+      describe 'double_encode_payload option' do
+        shared_examples_for 'builds request correctly' do |description, content, expected_content|
+          it description do
+            expected_body = { env: "il-qa2", type: "order_created" }
+            (expected_body[:content] = expected_content) unless expected_content.nil?
+            stub_request(:post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)).
+                with(body: expected_body).
+                to_return(status: 204)
+
+            HubClient.publish(:order_created, content)
+            assert_requested :post, HubClient.build_hub_url(HubClient.configuration.endpoint_url)
+          end
+        end
+
+        context 'when not specified' do
+          before do
+            HubClient.configure do |config|
+              config.env = "il-qa2"
+              config.endpoint_url = "http://service-hub.com"
+            end
+          end
+
+          include_examples 'builds request correctly', 'does not double encode', {some: 'content'}, {some: 'content'}
+        end
+
+        context 'when specified as false' do
+          before do
+            HubClient.configure do |config|
+              config.env = "il-qa2"
+              config.endpoint_url = "http://service-hub.com"
+              config.double_encode_content = false
+            end
+          end
+
+          include_examples 'builds request correctly', 'does not double encode', {some: 'content'}, {some: 'content'}
+        end
+
+        context 'when specified as true' do
+          before do
+            HubClient.configure do |config|
+              config.env = "il-qa2"
+              config.endpoint_url = "http://service-hub.com"
+              config.double_encode_content = true
+            end
+          end
+
+          include_examples 'builds request correctly', 'double encodes', {some: 'content'}, {some: 'content'}.to_json
         end
       end
     end

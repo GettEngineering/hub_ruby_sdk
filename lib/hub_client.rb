@@ -36,11 +36,16 @@ module HubClient
 
   private
 
+  def self.encode_content_if_specified(config, payload)
+    (payload[:content] = payload[:content].to_json) if config.double_encode_content && payload[:content]
+    payload
+  end
+
   def self.request_opts(config, payload)
     {
         method: :post,
         url: build_hub_url(config.endpoint_url),
-        payload: payload.to_json,
+        payload: encode_content_if_specified(config, payload).to_json,
         headers: REQUEST_HEADERS,
         timeout: config.timeout,
         open_timeout: config.open_timeout,

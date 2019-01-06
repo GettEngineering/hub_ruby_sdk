@@ -1,6 +1,6 @@
 module HubClient
   class Configuration
-    attr_accessor :env, :access_token, :endpoint_url, :retry_intervals, :open_timeout, :timeout
+    attr_accessor :env, :access_token, :endpoint_url, :retry_intervals, :open_timeout, :timeout, :double_encode_content
   end
 
   def self.configuration
